@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id     String   @id @default(uuid())
+  name   String
+  apiKey String   @map("api_key")
+  ticket Ticket[]
+
+  @@map("organization")
+}
+
+model Ticket {
+  id             String       @id @default(uuid())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @map("organiation_id")
+  customerEmail  String       @map("customer_email")
+  subject        String
+  message        String
+  category       String?
+  suggestedReply String?      @map("suggested_reply")
+  status         Status       @default(open)
+  createdAt      DateTime     @default(now())
+
+  @@map("ticket")
+}
+
+enum Status {
+  open
+  in_progress
+  closed
+}
