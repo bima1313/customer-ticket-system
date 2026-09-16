@@ -20,7 +20,7 @@ Sistem manajemen tiket customer support berbasis **NestJS** dengan arsitektur mu
    - [Provider yang Dipilih & Alasan](#provider-yang-dipilih--alasan)
    - [Desain Prompt](#desain-prompt)
 5. [Dokumentasi API](#dokumentasi-api)
-6. [Hal yang akan diperbaiki/ditambah kalau ada waktu lebih. (yang terpikirkan saat ini)](#Hal-yang-akan-diperbaiki/ditambah-kalau-ada-waktu-lebih. (yang-terpikirkan-saat-ini))
+6. [Hal yang akan diperbaiki/ditambah kalau ada waktu lebih. (yang terpikirkan saat ini)](#hal-yang-akan-diperbaikiditambah-kalau-ada-waktu-lebih-yang-terpikirkan-saat-ini)
 ---
 
 ## Fitur Utama
@@ -303,5 +303,5 @@ Base URL: `http://localhost:3000`
 - **Response (`200 OK`):** Objek tiket dengan status terbarui. Status yang diperbolehkan: `open`, `in_progress`, `closed`.
 
 ## Hal yang akan diperbaiki/ditambah kalau ada waktu lebih. (yang terpikirkan saat ini)
-### 1. Menggunakan Docker/Docker Compose
-### 2. Mempelajari mengenai Crawler, cara mengkoneksikan code python pada project ini serta mengimplementasikannya
+1. Menggunakan Docker/Docker Compose
+2. Mempelajari mengenai Crawler, cara mengkoneksikan code python pada project ini serta mengimplementasikannya
