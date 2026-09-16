@@ -20,7 +20,7 @@ Sistem manajemen tiket customer support berbasis **NestJS** dengan arsitektur mu
    - [Provider yang Dipilih & Alasan](#provider-yang-dipilih--alasan)
    - [Desain Prompt](#desain-prompt)
 5. [Dokumentasi API](#dokumentasi-api)
-6. [Hal yang akan diperbaiki/ditambah kalau ada waktu lebih. (yang terpikirkan saat ini)](#Hal-yang-akan-diperbaiki/ditambah-kalau-ada-waktu-lebih.-(yang-terpikirkan-saat-ini))
+6. [Hal yang akan diperbaiki/ditambah kalau ada waktu lebih. (yang terpikirkan saat ini)](#Hal-yang-akan-diperbaiki/ditambah-kalau-ada-waktu-lebih. (yang-terpikirkan-saat-ini))
 ---
 
 ## Fitur Utama
