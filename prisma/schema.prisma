@@ -5,7 +5,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -15,7 +15,7 @@ datasource db {
 model Organization {
   id     String   @id @default(uuid())
   name   String
-  apiKey String   @map("api_key")
+  apiKey String  @unique @map("api_key")
   ticket Ticket[]
 
   @@map("organization")
@@ -24,7 +24,7 @@ model Organization {
 model Ticket {
   id             String       @id @default(uuid())
   organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId String       @map("organiation_id")
+  organizationId String       @map("organization_id")
   customerEmail  String       @map("customer_email")
   subject        String
   message        String

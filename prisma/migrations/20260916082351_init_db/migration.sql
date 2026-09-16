@@ -13,7 +13,7 @@ CREATE TABLE "organization" (
 -- CreateTable
 CREATE TABLE "ticket" (
     "id" TEXT NOT NULL,
-    "organiation_id" TEXT NOT NULL,
+    "organization_id" TEXT NOT NULL,
     "customer_email" TEXT NOT NULL,
     "subject" TEXT NOT NULL,
     "message" TEXT NOT NULL,
@@ -25,5 +25,8 @@ CREATE TABLE "ticket" (
     CONSTRAINT "ticket_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateIndex
+CREATE UNIQUE INDEX "organization_api_key_key" ON "organization"("api_key");
+
 -- AddForeignKey
-ALTER TABLE "ticket" ADD CONSTRAINT "ticket_organiation_id_fkey" FOREIGN KEY ("organiation_id") REFERENCES "organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ticket" ADD CONSTRAINT "ticket_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
