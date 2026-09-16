@@ -55,14 +55,20 @@ describe('LlmService', () => {
 
   // ConfigService mock yang mengembalikan API key valid secara default
   const configServiceMock = {
-    get: vi.fn().mockReturnValue('test-api-key'),
+    get: vi.fn().mockImplementation((key: string) => {
+      if (key === 'GEMINI_API_KEY') return 'test-api-key';
+      return undefined;
+    }),
   };
 
   beforeEach(async () => {
     vi.clearAllMocks();
 
     // Pastikan mock selalu mengembalikan API key valid sebelum setiap test
-    configServiceMock.get.mockReturnValue('test-api-key');
+    configServiceMock.get.mockImplementation((key: string) => {
+      if (key === 'GEMINI_API_KEY') return 'test-api-key';
+      return undefined;
+    });
     cacheServiceMock = {
       get: vi.fn().mockResolvedValue(null),
       set: vi.fn().mockResolvedValue(undefined),
@@ -153,7 +159,7 @@ describe('LlmService', () => {
       expect(generateContentMock).toHaveBeenCalledOnce();
       expect(generateContentMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          model: 'gemini-2.0-flash',
+          model: 'gemini-3.6-flash',
           config: expect.objectContaining({
             responseMimeType: 'application/json',
           }),

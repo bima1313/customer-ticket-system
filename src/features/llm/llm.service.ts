@@ -84,8 +84,11 @@ export class LlmService {
 
     // 2. Panggil Gemini API
     this.logger.log('Cache miss — memanggil Gemini API.');
+    const model =
+      this.configService.get<string>('GEMINI_MODEL') ?? 'gemini-3.6-flash';
+
     const response = await this.ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model,
       contents: buildPrompt(subject, message),
       config: {
         responseMimeType: 'application/json',

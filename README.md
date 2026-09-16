@@ -10,12 +10,12 @@ Sistem manajemen tiket customer support berbasis **NestJS** dengan arsitektur mu
 2. [Tech Stack](#tech-stack)
 3. [Cara Menjalankan Project](#cara-menjalankan-project)
    - [Prasyarat Sistem](#prasyarat-sistem)
-   - [Setup Environment Variable](#1-setup-environment-variable)
-   - [Setup Database PostgreSQL & Migrasi Prisma](#2-setup-database-postgresql--migrasi-prisma)
-   - [Setup Redis](#3-setup-redis)
-   - [Membuat Data Awal (Organisasi & API Key)](#4-membuat-data-awal-organisasi--api-key)
-   - [Menjalankan Aplikasi](#5-menjalankan-aplikasi)
-   - [Menjalankan Pengujian (Testing)](#6-menjalankan-pengujian-testing)
+   - [1. Setup Environment Variable](#1-setup-environment-variable)
+   - [2. Setup Database PostgreSQL & Migrasi Prisma](#2-setup-database-postgresql--migrasi-prisma)
+   - [3. Setup Redis](#3-setup-redis)
+   - [4. Membuat Data Awal (Organisasi & API Key)](#4-membuat-data-awal-organisasi--api-key)
+   - [5. Menjalankan Aplikasi](#5-menjalankan-aplikasi)
+   - [6. Menjalankan Pengujian (Testing)](#6-menjalankan-pengujian-testing)
 4. [Integrasi LLM](#integrasi-llm)
    - [Provider yang Dipilih & Alasan](#provider-yang-dipilih--alasan)
    - [Desain Prompt](#desain-prompt)
@@ -25,11 +25,11 @@ Sistem manajemen tiket customer support berbasis **NestJS** dengan arsitektur mu
 
 ## Fitur Utama
 
-- **Multi-tenant Ticket Management**: Pengelolaan tiket terisolasi berdasarkan organisasi (`x-api-key`).
+- **Multi-tenant Ticket Management**: Pengelolaan tiket terisolasi berdasarkan organisasi melalui header `x-api-key`.
 - **Otomasi Klasifikasi LLM**: Mengklasifikasi tiket ke kategori `billing`, `technical`, atau `general` secara otomatis saat tiket dibuat (`POST /tickets`).
-- **AI Suggested Reply**: Menghasilkan draft balasan customer support untuk mempercepat waktu respon agen.
-- **Redis Cache Layer**: Mencegah pemanggilan LLM berulang untuk tiket dengan subjek & pesan yang identik.
-- **Graceful Error Handling**: Tiket tetap tersimpan meskipun koneksi LLM timeout, terkena rate limit, atau Redis sedang offline.
+- **AI Suggested Reply**: Menghasilkan draft balasan customer support yang empatik dan kontekstual untuk mempercepat respon agen support.
+- **Redis Cache Layer**: Mengurangi latensi dan biaya API dengan mencache hasil klasifikasi untuk subjek & pesan tiket yang serupa/identik.
+- **Graceful Error Handling**: Tiket tetap tersimpan aman di database meskipun koneksi LLM mengalami timeout, rate limit, atau Redis sedang offline.
 
 ---
 
@@ -39,9 +39,9 @@ Sistem manajemen tiket customer support berbasis **NestJS** dengan arsitektur mu
 
 Sebelum memulai, pastikan perangkat Anda telah terpasang:
 - **Node.js**: v20.x atau lebih baru
-- **Package Manager**: `pnpm` (direkomendasikan: `npm i -g pnpm`)
-- **PostgreSQL Server**: Berjalan lokal atau via cloud/Docker
-- **Redis Server**: Berjalan lokal atau via cloud/Docker
+- **Package Manager**: `pnpm` (`npm i -g pnpm`)
+- **PostgreSQL**: Berjalan secara lokal atau via Docker/Cloud
+- **Redis**: Berjalan secara lokal atau via Docker/Cloud
 
 ---
 
@@ -53,7 +53,7 @@ Salin file template `.env.example` menjadi `.env`:
 cp .env.example .env
 ```
 
-Buka file `.env` dan sesuaikan nilainya:
+Buka file `.env` dan lengkapi variabel berikut:
 
 ```env
 # URL koneksi database PostgreSQL
@@ -62,30 +62,33 @@ DATABASE_URL="postgresql://postgres:postgres26@localhost:5432/customer_ticket?sc
 # API Key Google Gemini (didapatkan dari https://aistudio.google.com/)
 GEMINI_API_KEY="AIzaSyYourGeminiApiKeyHere"
 
+# Model Gemini yang digunakan (default: gemini-3.6-flash)
+GEMINI_MODEL="gemini-3.6-flash"
+
 # URL koneksi Redis (opsional: jika kosong, sistem otomatis masuk mode graceful degrade tanpa cache)
 REDIS_URL="redis://localhost:6379"
 
-# Port aplikasi (default: 3000)
+# Port server (default: 3000)
 PORT=3000
 ```
 
-> **Keamanan:** API Key LLM dan kredensial database **wajib** disimpan dalam environment variable dan tidak boleh di-hardcode ke dalam repositori.
+> **Keamanan:** API Key LLM dan kredensial database **wajib** disimpan dalam environment variable dan tidak boleh di-hardcode ke dalam kode sumber.
 
 ---
 
 ### 2. Setup Database PostgreSQL & Migrasi Prisma
 
-1. Buat database di PostgreSQL (misal bernama `customer_ticket`):
+1. Buat database di PostgreSQL (misalnya bernama `customer_ticket`):
    ```sql
    CREATE DATABASE customer_ticket;
    ```
 
-2. Jalankan instalasi dependensi project:
+2. Pasang seluruh dependensi project:
    ```bash
    pnpm install
    ```
 
-3. Jalankan migrasi Prisma untuk membuat tabel database:
+3. Jalankan migrasi schema Prisma:
    ```bash
    pnpm run prisma:migrate
    ```
@@ -94,30 +97,69 @@ PORT=3000
 
 ### 3. Setup Redis
 
-Pastikan Redis server aktif pada port yang ditentukan (default `6379`).
+Pastikan Redis server aktif pada port yang dikonfigurasi (default `6379`). Anda bisa memilih salah satu cara berikut:
 
-**Opsi 1: Service Lokal (Windows / Linux / macOS)**
+#### Opsi A: Menggunakan Docker (Praktis)
 ```bash
-# Memastikan koneksi ke Redis
+docker run -d --name ticket-redis -p 6379:6379 redis:alpine
+```
+
+#### Opsi B: Tanpa Docker (via WSL2 di Windows) — Sangat Direkomendasikan untuk Windows
+Buka terminal WSL (Ubuntu) dan jalankan:
+```bash
+sudo apt update && sudo apt install redis-server -y
+sudo service redis-server start
+```
+*Port 6379 di WSL2 otomatis ter-forward ke `localhost:6379` di Windows.*
+
+#### Opsi C: Tanpa Docker (Native Windows via Scoop / Chocolatey / File .zip)
+- **Via Scoop:**
+  ```powershell
+  scoop install redis
+  redis-server
+  ```
+- **Via Chocolatey:**
+  ```powershell
+  choco install redis-64 -y
+  redis-server
+  ```
+- **Via Portable (.zip):** Unduh rilis Windows dari [tporadowski/redis GitHub Releases](https://github.com/tporadowski/redis/releases), ekstrak foldernya, lalu jalankan `redis-server.exe`.
+
+#### Opsi D: Menggunakan Redis Cloud Gratis (Tanpa Install Software Apapun)
+Gunakan layanan cloud gratis seperti [Upstash Redis](https://upstash.com/):
+1. Buat database gratis di Upstash.
+2. Salin connection string Redis URL.
+3. Tempelkan ke file `.env`:
+   ```env
+   REDIS_URL="rediss://default:your-password@your-endpoint.upstash.io:6379"
+   ```
+
+#### Opsi E: Tanpa Redis Sama Sekali (Mode Degraded / Graceful Fallback)
+Jika tidak ingin menjalankan Redis saat pengembangan, Anda **tidak wajib menginstall Redis**. Cukup kosongkan atau jangan set variabel `REDIS_URL` di `.env`:
+```env
+REDIS_URL=""
+```
+Sistem akan otomatis mendeteksi ketiadaan Redis dan beralih ke mode *graceful degradation* (aplikasi tetap berjalan 100% normal dengan langsung memanggil LLM tanpa error).
+
+**Verifikasi Koneksi:**
+```bash
 redis-cli ping
 # Response yang diharapkan: PONG
 ```
-
-> **Catatan:** Jika Redis tidak dijalankan, aplikasi tetap dapat beroperasi normal (cache di-bypass secara otomatis).
 
 ---
 
 ### 4. Membuat Data Awal (Organisasi & API Key)
 
-Semua endpoint dilindungi oleh `ApiKeyGuard`. Anda memerlukan minimal satu data organisasi di database untuk pengujian:
+Semua endpoint dilindungi oleh `ApiKeyGuard`. Anda memerlukan minimal satu data organisasi di database:
 
 Jalankan Prisma Studio:
 ```bash
 npx prisma studio
 ```
-1. Buka browser di alamat `http://localhost:5555`.
+1. Buka browser pada alamat `http://localhost:5555`.
 2. Klik model **Organization**, lalu klik **Add record**.
-3. Isi kolom:
+3. Isi data:
    - `name`: `PT Solusi Digital`
    - `apiKey`: `secret-key-organisasi-1`
 4. Klik tombol **Save 1 change**.
@@ -135,17 +177,17 @@ pnpm run build
 pnpm run start:prod
 ```
 
-Aplikasi akan aktif dan dapat diakses di: `http://localhost:3000`.
+Server backend akan berjalan di `http://localhost:3000`.
 
 ---
 
 ### 6. Menjalankan Pengujian (Testing)
 
 ```bash
-# Menjalankan seluruh unit test (Vitest)
+# Menjalankan unit tests (Vitest)
 pnpm run test
 
-# Menjalankan unit test dengan coverage report
+# Menjalankan test coverage
 pnpm run test:cov
 
 # Menjalankan end-to-end (E2E) test
@@ -158,28 +200,28 @@ pnpm run test:e2e
 
 ### Provider yang Dipilih & Alasan
 
-Project ini memilih **Google Gemini** menggunakan model **`gemini-2.0-flash`** melalui SDK resmi `@google/genai`.
+Project ini memilih **Google Gemini** menggunakan model **`gemini-3.6-flash`** melalui SDK resmi `@google/genai`. Model dapat disesuaikan secara dinamis melalui environment variable `GEMINI_MODEL`.
 
 **Alasan Pemilihan:**
 1. **Dukungan Native Structured Outputs (JSON Schema + Enum):**  
-   Gemini API mendukung penegakan skema respon (`responseSchema`) langsung di tingkat model. Hal ini menjamin bahwa properti `category` **pasti bernilai salah satu dari enum yang ditentukan** (`billing`, `technical`, atau `general`), mengurangi kemungkinan format respon yang salah.
+   Gemini API mendukung penegakan skema respon (`responseSchema`) langsung pada level engine. Hal ini menjamin properti `category` **pasti bernilai salah satu dari enum yang ditentukan** (`billing`, `technical`, atau `general`), meminimalisir format keluaran yang tidak valid.
 2. **Kecepatan & Latensi Sangat Rendah:**  
-   Model `gemini-2.0-flash` dioptimalkan untuk inferensi cepat (waktu respon rata-rata di bawah 1,5 detik), ideal untuk alur pembuatan tiket pelanggan secara real-time.
-3. **Efisiensi Biaya (Free Quota Developer):**  
-   Google AI Studio menyediakan kuota gratis yang memadai untuk kebutuhan pengembangan, pengujian internal, dan iterasi awal.
+   Model `gemini-3.6-flash` memiliki latensi inferensi rata-rata di bawah 1,5 detik, sangat cocok untuk alur pembuatan tiket pelanggan secara real-time.
+3. **Ketersediaan Kuota Gratis (Free Tier Developer):**  
+   Google AI Studio menyediakan kuota gratis yang memadai untuk kebutuhan pengujian dan tahap pengembangan awal.
 4. **SDK Resmi Modern:**  
-   Paket `@google/genai` kompatibel penuh dengan modern ECMAScript Modules (ESM) dan ekosistem TypeScript NestJS.
+   Paket `@google/genai` kompatibel penuh dengan arsitektur modern TypeScript ESM pada NestJS.
 
 ---
 
 ### Desain Prompt
 
-Digunakan pendekatan **Single Combined Prompt** (satu prompt gabungan). Pendekatan ini dipilih dibandingkan memanggil LLM dua kali karena:
+Digunakan strategi **Single Combined Prompt** (satu prompt gabungan). Pendekatan ini dipilih dibandingkan memanggil LLM dua kali secara terpisah karena:
 - Mengurangi latensi jaringan hingga 50%.
 - Menghemat konsumsi token input.
-- Menghindari risiko salah satu panggilan berhasil namun panggilan kedua gagal.
+- Menghindari inkonsistensi data jika salah satu panggilan API berhasil namun panggilan kedua gagal.
 
-#### Contoh Prompt yang Dikirim ke LLM:
+#### Contoh Prompt yang Digunakan:
 
 ```text
 Kamu adalah agen customer support profesional. Tugasmu adalah menganalisis
@@ -199,7 +241,7 @@ Subjek: {subject}
 Pesan: {message}
 ```
 
-#### Penegakan Skema Respon (Response Schema):
+#### Penegakan Response Schema:
 
 ```typescript
 config: {
@@ -209,7 +251,7 @@ config: {
     properties: {
       category: {
         type: Type.STRING,
-        enum: ['billing', 'technical', 'general'], // ← Enforce di engine level
+        enum: ['billing', 'technical', 'general'], // Enforce di level API Gemini
       },
       suggestedReply: { type: Type.STRING },
     },
@@ -218,89 +260,92 @@ config: {
 }
 ```
 
-Sebagai lapisan proteksi tambahan (defense-in-depth), output LLM tetap divalidasi di level aplikasi menggunakan `class-validator` (`@IsIn(['billing', 'technical', 'general'])`).
+Sebagai pertahanan berlapis (*defense-in-depth*), output juga divalidasi di level aplikasi menggunakan `class-validator` (`@IsIn(['billing', 'technical', 'general'])`).
 
 ---
 
-## Dokumentasi API
+## Dokumentasi API & Panduan Pengujian Postman
 
 Base URL: `http://localhost:3000`
 
 ### Headers Wajib
-| Header | Value | Deskripsi |
-| :--- | :--- | :--- |
-| `x-api-key` | `string` | API Key organisasi Anda |
-| `Content-Type` | `application/json` | Format payload request |
+| Header | Value |
+| :--- | :--- |
+| `x-api-key` | `secret-key-organisasi-1` *(sesuai data Organisasi Anda)* |
+| `Content-Type` | `application/json` |
 
 ---
 
-### 1. Buat Tiket Baru
-- **Method:** `POST`
-- **Path:** `/tickets`
-- **Request Body:**
-  ```json
-  {
-    "customerEmail": "budi@perusahaan.com",
-    "subject": "Gagal proses pembayaran langganan",
-    "message": "Kartu kredit saya ditolak saat memperpanjang paket tahunan, mohon solusinya."
-  }
-  ```
-- **Response (`201 Created`):**
-  ```json
+### 1. Buat Tiket Baru (POST /tickets)
+
+**Request Body (Technical Issue):**
+```json
+{
+  "customerEmail": "andi@gmail.com",
+  "subject": "Aplikasi crash saat klik tombol bayar",
+  "message": "Setiap kali saya menekan tombol checkout, aplikasi tiba-tiba force close dengan error code 500."
+}
+```
+
+**Response (`201 Created`):**
+```json
+{
+  "id": "7fa18357-bb6a-4d29-b68e-5bcf279b90fa",
+  "organizationId": "a1b2c3d4-e5f6-7890-abcd-1234567890ab",
+  "customerEmail": "andi@gmail.com",
+  "subject": "Aplikasi crash saat klik tombol bayar",
+  "message": "Setiap kali saya menekan tombol checkout, aplikasi tiba-tiba force close dengan error code 500.",
+  "category": "technical",
+  "suggestedReply": "Halo Andi, mohon maaf atas kendala yang dialami. Tim teknis kami sedang menyelidiki error 500 saat checkout. Mohon coba bersihkan cache aplikasi Anda terlebih dahulu sementara kami melakukan penelusuran lebih lanjut.",
+  "status": "open",
+  "createdAt": "2026-09-16T12:00:00.000Z"
+}
+```
+
+**Verifikasi Caching Redis:**
+Kirim request yang sama persis untuk kedua kalinya. Waktu respon di Postman akan turun drastis (< 30 ms) dan log console menampilkan `Menggunakan hasil LLM dari cache Redis.`.
+
+---
+
+### 2. Dapatkan Semua Tiket (GET /tickets)
+
+- **Query Params Opsional:**
+  - `?status=open`
+  - `?category=technical`
+
+**Response (`200 OK`):**
+```json
+[
   {
     "id": "7fa18357-bb6a-4d29-b68e-5bcf279b90fa",
-    "organizationId": "a1b2c3d4-e5f6-7890-abcd-1234567890ab",
-    "customerEmail": "budi@perusahaan.com",
-    "subject": "Gagal proses pembayaran langganan",
-    "message": "Kartu kredit saya ditolak saat memperpanjang paket tahunan, mohon solusinya.",
-    "category": "billing",
-    "suggestedReply": "Halo Budi, terima kasih telah menghubungi kami. Kami mohon maaf atas kendala pembayaran Anda. Mohon pastikan kartu Anda mendukung transaksi online internasional atau coba metode pembayaran alternatif di dashboard akun Anda.",
+    "customerEmail": "andi@gmail.com",
+    "subject": "Aplikasi crash saat klik tombol bayar",
+    "category": "technical",
     "status": "open",
     "createdAt": "2026-09-16T12:00:00.000Z"
   }
-  ```
+]
+```
 
 ---
 
-### 2. Dapatkan Semua Tiket
-- **Method:** `GET`
-- **Path:** `/tickets`
-- **Query Params (Opsional):**
-  - `status`: `open` | `in_progress` | `closed`
-  - `category`: `billing` | `technical` | `general`
-- **Response (`200 OK`):**
-  ```json
-  [
-    {
-      "id": "7fa18357-bb6a-4d29-b68e-5bcf279b90fa",
-      "customerEmail": "budi@perusahaan.com",
-      "subject": "Gagal proses pembayaran langganan",
-      "category": "billing",
-      "status": "open",
-      "createdAt": "2026-09-16T12:00:00.000Z"
-    }
-  ]
-  ```
+### 3. Dapatkan Detail Tiket (GET /tickets/:id)
+Mengambil detail lengkap satu tiket berdasarkan ID.
 
 ---
 
-### 3. Dapatkan Detail Tiket
-- **Method:** `GET`
-- **Path:** `/tickets/:id`
-- **Response (`200 OK`):** Objek tiket lengkap atau `404 Not Found`.
+### 4. Perbarui Status Tiket (PATCH /tickets/:id/status)
+
+**Request Body:**
+```json
+{
+  "status": "in_progress"
+}
+```
+
+**Response (`200 OK`):** Tiket dengan field `status` yang telah diperbarui (`open` | `in_progress` | `closed`).
 
 ---
-
-### 4. Perbarui Status Tiket
-- **Method:** `PATCH`
-- **Path:** `/tickets/:id/status`
-- **Request Body:**
-  ```json
-  {
-    "status": "in_progress"
-  }
-  ```
-- **Response (`200 OK`):** Objek tiket dengan status terbarui. Status yang diperbolehkan: `open`, `in_progress`, `closed`.
 
 ## Hal yang akan diperbaiki/ditambah kalau ada waktu lebih. (yang terpikirkan saat ini)
 1. Menggunakan Docker/Docker Compose
