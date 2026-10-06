@@ -33,6 +33,24 @@ Sistem manajemen tiket customer support berbasis **NestJS** dengan arsitektur mu
 
 ---
 
+## Tech Stack
+
+Proyek ini dibangun menggunakan arsitektur modern berbasis TypeScript dan stack teknologi berikut:
+
+| Komponen / Kategori | Teknologi | Versi | Deskripsi & Peran |
+| :--- | :--- | :--- | :--- |
+| **Bahasa Pemrograman** | [TypeScript](https://www.typescriptlang.org/) | `^6.0.2` | Bahasa pemrograman utama dengan sistem tipe statis ketat (*strict type-safety*) untuk keandalan dan skalabilitas kode. |
+| **Runtime Environment** | [Node.js](https://nodejs.org/) | `>=20.x` | Lingkungan runtime JavaScript dengan dukungan native ECMAScript Modules (ESM). |
+| **Backend Framework** | [NestJS](https://nestjs.com/) | `^12.0.1` | Framework Node.js modular berbasis arsitektur Controller-Service-Repository dengan sistem Dependency Injection. |
+| **Package Manager** | [pnpm](https://pnpm.io/) | Latest | Package manager yang cepat, deterministik, dan efisien dalam penggunaan ruang disk. |
+| **Database** | [PostgreSQL](https://www.postgresql.org/) | `18.1` (Windows App) | Relational database (RDBMS) untuk persistensi data multi-tenant dan tiket pelanggan. |
+| **ORM & Database Toolkit** | [Prisma ORM](https://www.prisma.io/) | `7.10.0` | Modern ORM dengan `@prisma/client`, `@prisma/adapter-pg`, dan Prisma Migrate untuk type-safe queries. |
+| **AI / LLM Engine** | [Google Gemini](https://ai.google.dev/) | `gemini-3.6-flash` | Model AI untuk klasifikasi tiket otomatis (`billing`, `technical`, `general`) dan pembuatan draf balasan. |
+| **AI SDK** | [@google/genai](https://www.npmjs.com/package/@google/genai) | `^2.22.0` | Official Google Gen AI SDK dengan dukungan *Native Structured Outputs* via `responseSchema`. |
+| **In-Memory Cache** | [Redis](https://redis.io/) / [ioredis](https://github.com/redis/ioredis) | `^6.0.0` | Caching layer untuk menyimpan hasil klasifikasi LLM |
+
+---
+
 ## Cara Menjalankan Project
 
 ### Prasyarat Sistem
@@ -264,7 +282,7 @@ Sebagai pertahanan berlapis (*defense-in-depth*), output juga divalidasi di leve
 
 ---
 
-## Dokumentasi API & Panduan Pengujian Postman
+## Dokumentasi API
 
 Base URL: `http://localhost:3000`
 
